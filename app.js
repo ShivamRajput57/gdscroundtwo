@@ -10,6 +10,10 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 function generateRandomData() {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const categories = ['Electronics', 'Clothing', 'Home & Garden', 'Sports & Outdoors'];
+    const products = ['Smartphone', 'Laptop', 'T-shirt', 'Jeans', 'Sofa', 'Lamp', 'Tennis Racket', 'Running Shoes'];
+
     return {
         kpis: {
             totalUsers: Math.floor(Math.random() * 2000) + 1000,
@@ -18,23 +22,23 @@ function generateRandomData() {
             customerSatisfaction: Math.floor(Math.random() * 20) + 80
         },
         timeSeriesData: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-            values: Array(6).fill().map(() => Math.floor(Math.random() * 100) + 50)
+            labels: months,
+            values: months.map(() => Math.floor(Math.random() * 10000) + 5000)
         },
         categoryData: {
-            labels: ['Category A', 'Category B', 'Category C', 'Category D'],
-            values: Array(4).fill().map(() => Math.floor(Math.random() * 100) + 20)
+            labels: categories,
+            values: categories.map(() => Math.floor(Math.random() * 20000) + 10000)
         },
-        scatterData: Array(20).fill().map(() => ({
-            x: Math.random() * 100,
-            y: Math.random() * 100
+        scatterData: Array(50).fill().map(() => ({
+            x: Math.random() * 10, // Customer satisfaction score (0-10)
+            y: Math.random() * 30  // Purchase frequency per month (0-30)
         })),
         largeDataset: Array(100).fill().map((_, index) => [
-            index + 1,
-            `Item ${index + 1}`,
-            Math.floor(Math.random() * 1000),
-            Math.floor(Math.random() * 1000),
-            ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)]
+            `ORD-${1000 + index}`,
+            products[Math.floor(Math.random() * products.length)],
+            Math.floor(Math.random() * 50) + 1,
+            Math.floor(Math.random() * 1000) + 100,
+            categories[Math.floor(Math.random() * categories.length)]
         ])
     };
 }
