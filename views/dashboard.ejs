@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KPI Dashboard</title>
+    <title>Enhanced KPI Dashboard</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
     <style>
+        body { font-family: Arial, sans-serif; }
         .dashboard {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -20,129 +24,170 @@
         }
         .chart-container {
             width: 100%;
-            max-width: 600px;
+            max-width: 800px;
             margin: 20px auto;
+        }
+        #dataTable {
+            width: 100%;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>KPI Dashboard</h1>
+    <h1>Enhanced KPI Dashboard</h1>
     
     <div class="dashboard" id="kpi-container"></div>
     
-    <!-- Line Chart -->
     <div class="chart-container">
         <canvas id="lineChart"></canvas>
     </div>
 
-    <!-- Bar Chart -->
     <div class="chart-container">
         <canvas id="barChart"></canvas>
     </div>
 
+    <div class="chart-container">
+        <canvas id="scatterChart"></canvas>
+    </div>
+
+    <table id="dataTable" class="display" style="width:100%"></table>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Safely parse the initial data
-        const initialData = <%- JSON.stringify(initialData) %>;
-        let lineChart, barChart;
+        $(document).ready(function() {
+            const initialData = <%- JSON.stringify(initialData) %>;
+            let lineChart, barChart, scatterChart, dataTable;
 
-        // Update KPI cards
-        function updateKPIs(data) {
-            const container = document.getElementById('kpi-container');
-            container.innerHTML = ''; // Clear existing KPIs
-            for (const [key, value] of Object.entries(data.kpis)) {
-                const kpiElement = document.createElement('div');
-                kpiElement.className = 'kpi-card';
-                kpiElement.innerHTML = `<h3>${key}</h3><p>${value}</p>`;
-                container.appendChild(kpiElement);
+            function updateKPIs(data) {
+                const container = document.getElementById('kpi-container');
+                container.innerHTML = '';
+                for (const [key, value] of Object.entries(data.kpis)) {
+                    const kpiElement = document.createElement('div');
+                    kpiElement.className = 'kpi-card';
+                    kpiElement.innerHTML = `<h3>${key}</h3><p>${value}</p>`;
+                    container.appendChild(kpiElement);
+                }
             }
-        }
 
-        // Update or create the line chart
-        function updateLineChart(data) {
-            if (lineChart) {
-                lineChart.data.labels = data.chartData.labels;
-                lineChart.data.datasets[0].data = data.chartData.values;
-                lineChart.update();
-            } else {
+            function updateLineChart(data) {
                 const ctx = document.getElementById('lineChart').getContext('2d');
-                lineChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.chartData.labels,
-                        datasets: [{
-                            label: 'Line Chart Data',
-                            data: data.chartData.values,
-                            borderColor: 'rgb(75, 192, 192)',
-                            tension: 0.1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
+                if (lineChart) {
+                    lineChart.data.labels = data.timeSeriesData.labels;
+                    lineChart.data.datasets[0].data = data.timeSeriesData.values;
+                    lineChart.update();
+                } else {
+                    lineChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.timeSeriesData.labels,
+                            datasets: [{
+                                label: 'Time Series Data',
+                                data: data.timeSeriesData.values,
+                                borderColor: 'rgb(75, 192, 192)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: { y: { beginAtZero: true } }
                         }
-                    }
-                });
+                    });
+                }
             }
-        }
 
-        // Update or create the bar chart
-        function updateBarChart(data) {
-            if (barChart) {
-                barChart.data.labels = data.chartData.labels;
-                barChart.data.datasets[0].data = data.chartData.values;
-                barChart.update();
-            } else {
+            function updateBarChart(data) {
                 const ctx = document.getElementById('barChart').getContext('2d');
-                barChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.chartData.labels,
-                        datasets: [{
-                            label: 'Bar Chart Data',
-                            data: data.chartData.values,
-                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true
+                if (barChart) {
+                    barChart.data.labels = data.categoryData.labels;
+                    barChart.data.datasets[0].data = data.categoryData.values;
+                    barChart.update();
+                } else {
+                    barChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.categoryData.labels,
+                            datasets: [{
+                                label: 'Category Data',
+                                data: data.categoryData.values,
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: { y: { beginAtZero: true } }
+                        }
+                    });
+                }
+            }
+
+            function updateScatterChart(data) {
+                const ctx = document.getElementById('scatterChart').getContext('2d');
+                if (scatterChart) {
+                    scatterChart.data.datasets[0].data = data.scatterData;
+                    scatterChart.update();
+                } else {
+                    scatterChart = new Chart(ctx, {
+                        type: 'scatter',
+                        data: {
+                            datasets: [{
+                                label: 'Scatter Data',
+                                data: data.scatterData,
+                                backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                x: { type: 'linear', position: 'bottom' },
+                                y: { beginAtZero: true }
                             }
                         }
-                    }
-                });
+                    });
+                }
             }
-        }
 
-        
+            function updateDataTable(data) {
+                if (dataTable) {
+                    dataTable.clear().rows.add(data.largeDataset).draw();
+                } else {
+                    dataTable = $('#dataTable').DataTable({
+                        data: data.largeDataset,
+                        columns: [
+                            { title: "ID" },
+                            { title: "Name" },
+                            { title: "Value 1" },
+                            { title: "Value 2" },
+                            { title: "Category" }
+                        ]
+                    });
+                }
+            }
 
-        // Initialize with initial data
-        updateKPIs(initialData);
-        updateLineChart(initialData);
-        updateBarChart(initialData);
+            updateKPIs(initialData);
+            updateLineChart(initialData);
+            updateBarChart(initialData);
+            updateScatterChart(initialData);
+            updateDataTable(initialData);
 
-        const socket = io();
-        socket.on('connect', () => {
-            console.log('Connected to server');
-        });
+            const socket = io();
+            socket.on('connect', () => {
+                console.log('Connected to server');
+            });
 
-        // Listen for updates
-        socket.on('data-update', (data) => {
-            console.log('Received data:', data);
-            updateKPIs(data);
-            updateLineChart(data);
-            updateBarChart(data);
-        });
+            socket.on('data-update', (data) => {
+                console.log('Received data:', data);
+                updateKPIs(data);
+                updateLineChart(data);
+                updateBarChart(data);
+                updateScatterChart(data);
+                updateDataTable(data);
+            });
 
-        socket.on('connect_error', (error) => {
-            console.error('Connection error:', error);
+            socket.on('connect_error', (error) => {
+                console.error('Connection error:', error);
+            });
         });
     </script>
 </body>
