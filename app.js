@@ -8,7 +8,7 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.static(path.join(__dirname, 'public')));
-
+const port=3000
 function generateRandomData() {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const categories = ['Electronics', 'Clothing', 'Home & Garden', 'Sports & Outdoors'];
@@ -63,7 +63,4 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+app,listen(process.env.PORT || port, () => console.log(`Listenting on port ${port}`))
